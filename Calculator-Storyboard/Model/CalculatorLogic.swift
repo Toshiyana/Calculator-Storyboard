@@ -14,6 +14,10 @@ struct CalculatorLogic {
     
     private var intermediateCalculation: (n1: Double, calcMethod: String)?//tuple
     
+    private var previousResult: Double?
+    private var previousOperation: String?
+    private var n2Last: Double?
+    
     mutating func setNumber(_ number: Double) {
         self.number = number
     }
@@ -23,15 +27,48 @@ struct CalculatorLogic {
         if let num = number {
             switch symbol {
             case "AC":
+                previousOperation = nil
+                intermediateCalculation = nil
+                previousResult = nil
                 return 0
             case "+/-":
                 return num * -1
             case "%":
                 return num * 0.01
             case "=":
-                return performTwoNumCalculation(n2: num)
+                if let result = previousResult {
+                    intermediateCalculation?.n1 = result
+                }
+                
+                if previousOperation != "=" {
+                    previousResult = performTwoNumCalculation(n2: num)
+                    n2Last = num
+                    previousOperation = "="
+                } else {
+                    guard let num2 = n2Last else {
+                        fatalError("num2 does not exist.")
+                    }
+                    previousResult = performTwoNumCalculation(n2: num2)
+                }
+
+                print(n2Last!)
+                return previousResult
+                
             default:
-                intermediateCalculation = (n1: num, calcMethod: symbol)
+                previousOperation = intermediateCalculation?.calcMethod
+                if previousOperation == "+" || previousOperation == "-" || previousOperation == "X" || previousOperation == "/" {
+
+                    if let result = previousResult {
+                        intermediateCalculation = (n1: result, calcMethod: symbol)
+                    }
+                    
+                    previousResult = performTwoNumCalculation(n2: num)
+                    
+                    return previousResult
+                    
+                } else {//previousOperationがnilの時
+                    intermediateCalculation = (n1: num, calcMethod: symbol)
+                }
             }
         }
         return nil//上記のいずれも満たさない場合
